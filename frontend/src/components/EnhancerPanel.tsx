@@ -1,32 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Terminal, 
-  Palette, 
+  Code2, 
+  Layout, 
   Megaphone, 
-  PenTool, 
+  PenLine, 
   Briefcase, 
-  Lightbulb, 
-  Image as ImageIcon, 
-  FileText, 
-  Zap
+  Rocket, 
+  Image, 
+  FileUser, 
+  ArrowUpRight,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 
 export const CATEGORIES = [
-  { name: 'Coding', icon: Terminal, desc: 'Syntax, modularity & structure' },
-  { name: 'UI/UX', icon: Palette, desc: 'Accessibility, layouts & states' },
-  { name: 'Marketing', icon: Megaphone, desc: 'Target audience, CTAs & hooks' },
-  { name: 'Content Writing', icon: PenTool, desc: 'Tone, formatting & readability' },
-  { name: 'Business', icon: Briefcase, desc: 'Objectives, risk & positioning' },
-  { name: 'Startup Ideas', icon: Lightbulb, desc: 'Market fit, loops & economics' },
-  { name: 'Image Generation', icon: ImageIcon, desc: 'Lighting, styles & camera detail' },
-  { name: 'Resume Building', icon: FileText, desc: 'ATS rules, metrics & action verbs' }
+  { name: 'Coding', icon: Code2, short: 'Code & architecture' },
+  { name: 'UI/UX', icon: Layout, short: 'Layouts & design systems' },
+  { name: 'Marketing', icon: Megaphone, short: 'Copy, CTAs & growth' },
+  { name: 'Content Writing', icon: PenLine, short: 'Articles & narratives' },
+  { name: 'Business', icon: Briefcase, short: 'Strategy & frameworks' },
+  { name: 'Startup Ideas', icon: Rocket, short: 'GTM & business models' },
+  { name: 'Image Generation', icon: Image, short: 'Midjourney & DALL-E' },
+  { name: 'Resume Building', icon: FileUser, short: 'ATS & action verbs' }
 ];
 
 export const LEVELS = [
-  { name: 'Basic', tag: 'Direct', desc: 'Fixes grammar, makes intent clear' },
-  { name: 'Professional', tag: 'Structured', desc: 'Adds role persona, goals & constraints' },
-  { name: 'Expert', tag: 'Template', desc: 'Includes variables, reasoning & edge-cases' }
+  { name: 'Basic', label: 'Basic', desc: 'Direct directive with grammar & intent fixes' },
+  { name: 'Professional', label: 'Professional', desc: 'Expert persona, goals, constraints & output format' },
+  { name: 'Expert', label: 'Expert', desc: 'Comprehensive template with variables & chain-of-thought' }
 ] as const;
+
+const QUICK_STARTERS = [
+  { label: 'Python scraper', category: 'Coding', level: 'Professional' as const, prompt: 'Write an asynchronous Python script using Playwright to scrape product prices and export to CSV.' },
+  { label: 'SaaS landing page', category: 'Marketing', level: 'Professional' as const, prompt: 'Create landing page copy using the AIDA framework for an AI-powered calendar tool.' },
+  { label: 'Modern design system', category: 'UI/UX', level: 'Expert' as const, prompt: 'Design a clean typography and color token system for a dark-mode analytics dashboard.' },
+  { label: 'Pitch deck outline', category: 'Startup Ideas', level: 'Professional' as const, prompt: 'Create a 10-slide venture capital pitch deck outline for a B2B SaaS startup.' }
+];
 
 interface EnhancerPanelProps {
   onEnhance: (prompt: string, category: string, level: 'Basic' | 'Professional' | 'Expert') => void;
@@ -47,7 +56,6 @@ export const EnhancerPanel: React.FC<EnhancerPanelProps> = ({
   const [category, setCategory] = useState(initialCategory);
   const [level, setLevel] = useState<'Basic' | 'Professional' | 'Expert'>(initialLevel);
 
-  // Sync state if initialProps change (e.g. reloading from history)
   useEffect(() => {
     setPrompt(initialPrompt);
   }, [initialPrompt]);
@@ -60,40 +68,32 @@ export const EnhancerPanel: React.FC<EnhancerPanelProps> = ({
     setLevel(initialLevel);
   }, [initialLevel]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim()) return;
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!prompt.trim() || isLoading) return;
     onEnhance(prompt, category, level);
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
-      {/* Prompt Text Input */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold tracking-tight text-foreground/95 flex items-center justify-between">
-          <span>Enter Rough Prompt</span>
-          <span className="text-xs text-muted-foreground font-normal">
-            {prompt.length} / 2000 chars
-          </span>
-        </label>
-        <div className="relative">
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value.slice(0, 2000))}
-            placeholder="Type your basic prompt idea here (e.g., 'write a python script to scan local files and sort them')..."
-            rows={5}
-            disabled={isLoading}
-            className="w-full p-4 rounded-2xl glass-input placeholder-muted-foreground/60 resize-none text-sm leading-relaxed"
-          />
-        </div>
-      </div>
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
-      {/* Categories Selector */}
+  const wordCount = prompt.trim() ? prompt.trim().split(/\s+/).length : 0;
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">
+      {/* Category Horizontal Segmented Bar */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold tracking-tight text-foreground/95 flex items-center justify-between">
-          <span>Select Category</span>
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+          <span>Domain Category</span>
+          <span className="text-[11px] text-muted-foreground/80 font-normal">
+            {CATEGORIES.find(c => c.name === category)?.short}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const isSelected = category === cat.name;
@@ -103,29 +103,29 @@ export const EnhancerPanel: React.FC<EnhancerPanelProps> = ({
                 type="button"
                 onClick={() => setCategory(cat.name)}
                 disabled={isLoading}
-                className={`flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all duration-300 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 border select-none ${
                   isSelected
-                    ? 'border-primary bg-primary/5 text-primary shadow-[0_0_15px_rgba(139,92,246,0.1)] ring-1 ring-primary'
-                    : 'border-border/60 bg-card/25 dark:bg-card/10 hover:border-primary/40 hover:bg-foreground/[0.02] text-foreground'
+                    ? 'bg-primary text-primary-foreground border-primary shadow-sm font-semibold'
+                    : 'bg-card/40 dark:bg-card/20 text-muted-foreground border-border hover:border-foreground/20 hover:text-foreground'
                 }`}
               >
-                <div className={`p-2 rounded-xl mb-3 ${isSelected ? 'bg-primary/15 text-primary' : 'bg-foreground/5 text-muted-foreground'}`}>
-                  <Icon className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-sm font-bold tracking-tight mb-0.5">{cat.name}</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">{cat.desc}</span>
+                <Icon className="w-3.5 h-3.5" />
+                <span>{cat.name}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Levels Selector */}
+      {/* Enhancement Level Segmented Switcher */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold tracking-tight text-foreground/95">
-          <span>Enhancement Level</span>
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+          <span>Optimization Depth</span>
+          <span className="text-[11px] text-muted-foreground/80 font-normal">
+            {LEVELS.find(l => l.name === level)?.desc}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 p-1 rounded-xl bg-secondary/80 dark:bg-secondary/40 border border-border">
           {LEVELS.map((lvl) => {
             const isSelected = level === lvl.name;
             return (
@@ -134,52 +134,112 @@ export const EnhancerPanel: React.FC<EnhancerPanelProps> = ({
                 type="button"
                 onClick={() => setLevel(lvl.name)}
                 disabled={isLoading}
-                className={`flex flex-col p-3.5 rounded-2xl border text-left transition-all duration-300 ${
+                className={`py-1.5 text-xs font-medium rounded-lg transition-all duration-150 ${
                   isSelected
-                    ? 'border-primary bg-primary/5 text-primary shadow-[0_0_15px_rgba(139,92,246,0.1)] ring-1 ring-primary'
-                    : 'border-border/60 bg-card/25 dark:bg-card/10 hover:border-primary/40 hover:bg-foreground/[0.02] text-foreground'
+                    ? 'bg-card text-foreground shadow-sm font-semibold dark:bg-card/90'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2 w-full">
-                  <span className="text-sm font-bold tracking-tight">{lvl.name}</span>
-                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md ${
-                    isSelected ? 'bg-primary/20 text-primary' : 'bg-foreground/10 text-muted-foreground'
-                  }`}>
-                    {lvl.tag}
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground leading-relaxed">{lvl.desc}</span>
+                {lvl.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={isLoading || !prompt.trim()}
-        className={`w-full py-4 px-6 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2.5 transition-all duration-300 select-none shadow-[0_4px_20px_-4px_rgba(139,92,246,0.4)] ${
-          isLoading || !prompt.trim()
-            ? 'bg-muted border border-border/80 text-muted-foreground cursor-not-allowed shadow-none'
-            : 'bg-primary hover:bg-primary-hover text-primary-foreground hover:scale-[1.01] hover:shadow-[0_4px_25px_-2px_rgba(139,92,246,0.6)] cursor-pointer'
-        }`}
-      >
-        {isLoading ? (
-          <>
-            <svg className="animate-spin h-5 w-5 text-current" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            Analyzing Intent & Optimizing...
-          </>
-        ) : (
-          <>
-            <Zap className="w-4.5 h-4.5 fill-current" />
-            Enhance Prompt
-          </>
-        )}
-      </button>
+      {/* Editor Surface */}
+      <div className="flex flex-col rounded-xl border border-border bg-card/60 dark:bg-card/30 overflow-hidden focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+        {/* Editor Toolbar */}
+        <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/70 text-xs text-muted-foreground bg-secondary/20">
+          <span className="font-medium text-foreground/80">Prompt Input</span>
+          <div className="flex items-center gap-3">
+            <span>{wordCount} words</span>
+            <span className="text-border">|</span>
+            <span>{prompt.length}/2000 chars</span>
+            {prompt.length > 0 && !isLoading && (
+              <>
+                <span className="text-border">|</span>
+                <button
+                  type="button"
+                  onClick={() => setPrompt('')}
+                  className="hover:text-foreground flex items-center gap-1 transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Clear</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value.slice(0, 2000))}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter your rough prompt, instructions, or raw ideas here..."
+          rows={6}
+          disabled={isLoading}
+          className="w-full p-3.5 bg-transparent resize-none text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+        />
+
+        {/* Quick Starters Footer inside Editor */}
+        <div className="px-3.5 py-2.5 border-t border-border/50 bg-secondary/10 flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <span className="text-[11px] text-muted-foreground font-medium shrink-0">Try example:</span>
+          {QUICK_STARTERS.map((starter) => (
+            <button
+              key={starter.label}
+              type="button"
+              onClick={() => {
+                setPrompt(starter.prompt);
+                setCategory(starter.category);
+                setLevel(starter.level);
+              }}
+              disabled={isLoading}
+              className="text-[11px] px-2 py-0.5 rounded-md border border-border/80 bg-card hover:border-foreground/20 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            >
+              {starter.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Action CTA */}
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 hidden sm:flex">
+          <span>Press</span>
+          <kbd className="kbd">Ctrl</kbd>
+          <span>+</span>
+          <kbd className="kbd">Enter</kbd>
+          <span>to enhance</span>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isLoading || !prompt.trim()}
+          className={`flex-1 sm:flex-initial sm:min-w-[180px] px-5 py-2.5 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition-all duration-150 select-none ${
+            isLoading || !prompt.trim()
+              ? 'bg-secondary text-muted-foreground border border-border cursor-not-allowed opacity-60'
+              : 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm cursor-pointer font-semibold'
+          }`}
+        >
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-3.5 w-3.5 text-current" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Optimizing prompt...</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Enhance Prompt</span>
+              <ArrowUpRight className="w-3.5 h-3.5 opacity-70" />
+            </>
+          )}
+        </button>
+      </div>
     </form>
   );
 };

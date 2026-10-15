@@ -8,13 +8,17 @@ import { ToastContainer } from './components/Toast';
 import type { ToastMessage } from './components/Toast';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { enhancePrompt as apiEnhancePrompt } from './services/api';
-import { Sparkles, Menu, Command } from 'lucide-react';
+import { 
+  History, 
+  Layers, 
+  CheckCircle2, 
+  Plus
+} from 'lucide-react';
 
 export default function App() {
-  // 1. Theme Configuration
+  // Theme state
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('prompt_enhancer_theme', 'dark');
 
-  // Synchronize theme with document element classes
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === 'dark') {
@@ -28,21 +32,21 @@ export default function App() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  // 2. Persistent History
+  // Persistent prompt history
   const [history, setHistory] = useLocalStorage<HistoryItem[]>('prompt_enhancer_history', []);
 
-  // 3. Form States
+  // Form states
   const [inputPrompt, setInputPrompt] = useState('');
   const [category, setCategory] = useState('Coding');
   const [level, setLevel] = useState<'Basic' | 'Professional' | 'Expert'>('Professional');
-  
-  // 4. API Results & UI States
+
+  // Execution states
   const [enhancedPrompt, setEnhancedPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // 5. Toast Notifications State
+  // Notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info') => {
@@ -54,7 +58,6 @@ export default function App() {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  // 6. Action Handlers
   const handleEnhance = async (
     prompt: string,
     selectedCategory: string,
@@ -64,7 +67,6 @@ export default function App() {
     setError(undefined);
     setEnhancedPrompt('');
 
-    // Update form state values so the panels synchronize visual selection
     setInputPrompt(prompt);
     setCategory(selectedCategory);
     setLevel(selectedLevel);
@@ -77,9 +79,8 @@ export default function App() {
       });
 
       setEnhancedPrompt(response.enhancedPrompt);
-      addToast('Prompt optimized successfully!', 'success');
+      addToast('Prompt optimized successfully', 'success');
 
-      // Create new history entry
       const newItem: HistoryItem = {
         id: Math.random().toString(36).substring(2, 9),
         originalPrompt: prompt,
@@ -93,7 +94,7 @@ export default function App() {
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'An unexpected error occurred.');
-      addToast(err.message || 'Failed to enhance prompt.', 'error');
+      addToast(err.message || 'Failed to enhance prompt', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -105,28 +106,29 @@ export default function App() {
     setLevel(item.level);
     setEnhancedPrompt(item.enhancedPrompt);
     setError(undefined);
-    addToast(`Loaded prompt from history`, 'info');
+    addToast('Loaded prompt from history', 'info');
   };
 
   const handleDeleteHistoryItem = (id: string) => {
     setHistory((prev) => prev.filter((item) => item.id !== id));
-    addToast('Prompt removed from history', 'info');
   };
 
   const handleClearAllHistory = () => {
-    if (window.confirm('Are you sure you want to delete your entire history? This cannot be undone.')) {
+    if (window.confirm('Delete your entire prompt history?')) {
       setHistory([]);
-      addToast('All history cleared', 'info');
+      addToast('History cleared', 'info');
     }
   };
 
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground transition-colors duration-300 relative">
-      {/* Visual background ambient mesh glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-500/10 blur-[120px] pointer-events-none" />
+  const handleNewPrompt = () => {
+    setInputPrompt('');
+    setEnhancedPrompt('');
+    setError(undefined);
+  };
 
-      {/* Sidebar Panel */}
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
+      {/* History Sidebar */}
       <Sidebar
         history={history}
         onSelect={handleSelectHistoryItem}
@@ -136,101 +138,118 @@ export default function App() {
         setIsOpen={setIsSidebarOpen}
       />
 
-      {/* Main Content Pane */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Navigation / Header */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-border/80 glass-panel backdrop-blur-md z-10">
+      {/* Main Studio Viewport */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Top App Bar */}
+        <header className="flex items-center justify-between px-4 sm:px-6 py-2.5 border-b border-border bg-card/60 dark:bg-card/30 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
-            {/* Mobile Menu trigger */}
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="md:hidden p-2 rounded-xl border border-border hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Open History"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-primary text-primary-foreground hidden md:flex">
-                <Command className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-xs">
+                <Layers className="w-4 h-4" />
               </div>
-              <span className="font-extrabold tracking-tight text-base sm:text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                Prompt<span className="text-primary">Forge</span>
+              <span className="font-semibold text-sm tracking-tight text-foreground">
+                PromptCraft
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary tracking-wide hidden sm:inline-block">
-                SaaS v1.0
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded border border-border bg-secondary/50">
+                Studio
               </span>
             </div>
+
+            <span className="text-border hidden sm:inline">|</span>
+
+            {/* Quick New Prompt Button */}
+            <button
+              onClick={handleNewPrompt}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-secondary/60 hidden sm:flex"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right Toolbar Controls */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Model Status Pill */}
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-secondary/40 text-[11px] text-muted-foreground font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Gemini 3.8 Flash</span>
+            </div>
+
+            {/* History Toggle Button */}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                isSidebarOpen
+                  ? 'bg-secondary text-foreground border-border'
+                  : 'text-muted-foreground hover:text-foreground border-border/60 hover:bg-secondary/50'
+              }`}
+              title="Toggle Prompt History"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">History</span>
+              {history.length > 0 && (
+                <span className="text-[10px] font-mono px-1 rounded bg-primary/10 text-primary">
+                  {history.length}
+                </span>
+              )}
+            </button>
+
+            {/* Theme Toggle */}
             <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
           </div>
         </header>
 
-        {/* Workspace Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-6xl mx-auto flex flex-col gap-6 h-full">
-            {/* Gradient Hero Section */}
-            <div className="text-center md:text-left py-4 sm:py-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/25 bg-primary/5 text-primary text-xs font-semibold tracking-wide mb-3 animate-fade-in">
-                <Sparkles className="w-3.5 h-3.5 fill-primary/10" />
-                <span>Powered by GPT-4o Mini</span>
+        {/* Studio Workspace Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
+          <div className="max-w-7xl mx-auto flex flex-col gap-5">
+            {/* Workspace Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-border/50">
+              <div>
+                <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                  Prompt Engineering Studio
+                </h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Transform raw instructions into detailed, structured prompts with context, constraints, and chain-of-thought directives.
+                </p>
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent leading-none">
-                Transform rough prompts into AI code.
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground mt-3 max-w-xl leading-relaxed">
-                Elevate your outputs. Add context, structure format, edge-cases, and strict persona guidelines automatically.
-              </p>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground shrink-0">
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Production Ready</span>
+                </span>
+              </div>
             </div>
 
-            {/* Split Editor / Output Workspace */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch mb-6">
-              {/* Left Column: Form Editor */}
-              <div className="lg:col-span-7 flex flex-col">
-                <div className="glass-panel-glow border border-border/80 rounded-3xl p-5 sm:p-7 flex-1 flex flex-col">
-                  <h2 className="text-base font-bold tracking-tight text-foreground/90 mb-5 flex items-center gap-2">
-                    <span className="flex h-2 w-2 rounded-full bg-primary" />
-                    Prompt Customizer
-                  </h2>
-                  <EnhancerPanel
-                    onEnhance={handleEnhance}
-                    isLoading={isLoading}
-                    initialPrompt={inputPrompt}
-                    initialCategory={category}
-                    initialLevel={level}
-                  />
-                </div>
+            {/* Split Screen Workspace: Left (Composer) & Right (Inspector) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* Left Column: Prompt Composer */}
+              <div className="lg:col-span-6 xl:col-span-7 studio-card rounded-2xl p-4 sm:p-5">
+                <EnhancerPanel
+                  onEnhance={handleEnhance}
+                  isLoading={isLoading}
+                  initialPrompt={inputPrompt}
+                  initialCategory={category}
+                  initialLevel={level}
+                />
               </div>
 
-              {/* Right Column: Output Viewer */}
-              <div className="lg:col-span-5 flex flex-col">
-                <div className="glass-panel border border-border/80 rounded-3xl p-5 sm:p-7 flex-1 flex flex-col justify-between">
-                  <div className="flex flex-col gap-1.5 mb-5">
-                    <h2 className="text-base font-bold tracking-tight text-foreground/90 flex items-center gap-2">
-                      <span className="flex h-2 w-2 rounded-full bg-indigo-500" />
-                      Optimized Output
-                    </h2>
-                  </div>
-                  <div className="flex-1 flex flex-col">
-                    <OutputPanel
-                      enhancedPrompt={enhancedPrompt}
-                      isLoading={isLoading}
-                      category={category}
-                      level={level}
-                      error={error}
-                      onCopy={() => addToast('Prompt copied to clipboard!', 'success')}
-                    />
-                  </div>
-                </div>
+              {/* Right Column: Output Inspector */}
+              <div className="lg:col-span-6 xl:col-span-5 studio-card rounded-2xl p-4 sm:p-5 sticky top-6">
+                <OutputPanel
+                  enhancedPrompt={enhancedPrompt}
+                  isLoading={isLoading}
+                  category={category}
+                  level={level}
+                  error={error}
+                  onCopy={() => addToast('Copied to clipboard', 'success')}
+                />
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Notifications Layer */}
+      {/* Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );

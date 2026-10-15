@@ -42,4 +42,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`AI Prompt Enhancer Backend listening on port ${PORT}`);
 });
-console.log("Gemini Key:", process.env.GEMINI_API_KEY);
+console.log(`Gemini API Key: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);

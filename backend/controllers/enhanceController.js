@@ -79,16 +79,17 @@ exports.enhancePrompt = async (req, res, next) => {
     const catGuide = CATEGORY_GUIDELINES[category];
     const lvlGuide = LEVEL_CONFIG[level];
 
-    // Ensure Client is initialized
+    // Refresh dotenv in case .env was edited
+    require('dotenv').config();
+
+    // Ensure Client is initialized with current API key
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
         error: 'Gemini API key is missing on the server. Please configure GEMINI_API_KEY in the backend .env file.'
       });
     }
 
-    if (!ai) {
-      ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    }
+    const aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     // Construct System Prompt
     const systemPrompt = `You are an expert Prompt Engineer, Prompt Architect, and UI/UX Prompt Copywriter.
@@ -111,23 +112,53 @@ CRITICAL RULES:
 5. Complete every section before ending the response.
 6. Never leave numbered lists unfinished.
 7. Ensure the final output is fully complete do not end mid-sentence or mid-thought.`;
-    // Call Google Gemini API
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Enhance the following rough prompt:\n\n"""\n${prompt}\n"""`,
-      config: {
-        systemInstruction: systemPrompt,
-        temperature: 0.7,
-        maxOutputTokens: 8192,
+
+    // Fallback model list to handle high demand (503) or temporary regional outages
+    const CANDIDATE_MODELS = [
+      'gemini-flash-latest',
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+      'gemini-2.5-flash'
+    ];
+
+    let enhancedPrompt = '';
+    let lastError = null;
+
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        console.log(`Attempting prompt enhancement using model: ${modelName}`);
+        const response = await aiClient.models.generateContent({
+          model: modelName,
+          contents: `Enhance the following rough prompt:\n\n"""\n${prompt}\n"""`,
+          config: {
+            systemInstruction: systemPrompt,
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+          }
+        });
+
+        if (response.text && response.text.trim()) {
+          enhancedPrompt = response.text.trim();
+          console.log(`Successfully generated prompt with model: ${modelName}`);
+          break; // Succeeded!
+        }
+      } catch (modelErr) {
+        lastError = modelErr;
+        console.warn(`Model ${modelName} encountered an error:`, modelErr.message || modelErr);
+        // If it's an auth error, no need to retry other models with the same invalid key
+        if (
+          modelErr.status === 401 ||
+          modelErr.message?.includes('API_KEY_INVALID') ||
+          modelErr.message?.includes('API key not valid')
+        ) {
+          throw modelErr;
+        }
+        // Otherwise, continue to the next model in the fallback chain (handles 503 high demand, 404 not found, 429 rate limit)
       }
-    });
+    }
 
-console.log("Response length:", response.text?.length);
-console.log("Response:", response.text);
-
-const enhancedPrompt = response.text ? response.text.trim() : '';
     if (!enhancedPrompt) {
-      throw new Error('Received empty content from Gemini API.');
+      throw lastError || new Error('Received empty content from Gemini API.');
     }
 
     return res.json({
@@ -138,14 +169,31 @@ const enhancedPrompt = response.text ? response.text.trim() : '';
     console.error('Error in enhancePrompt controller:', error);
     
     // Check for specific authentication error signature
-    if (error.status === 401 || error.message?.includes('API key') || error.message?.includes('API_KEY')) {
+    if (
+      error.status === 401 ||
+      error.message?.includes('API_KEY_INVALID') ||
+      error.message?.includes('API key not valid')
+    ) {
       return res.status(401).json({
         error: 'Authentication failed. Please verify your Google Gemini API key is valid.'
       });
     }
 
+    // Extract cleaner error message if error.message is stringified JSON
+    let cleanMessage = error.message || 'Unknown API Error';
+    try {
+      if (cleanMessage.startsWith('{')) {
+        const parsed = JSON.parse(cleanMessage);
+        if (parsed?.error?.message) {
+          cleanMessage = parsed.error.message;
+        }
+      }
+    } catch {
+      // Keep original cleanMessage if parsing fails
+    }
+
     return res.status(500).json({
-      error: `Failed to enhance prompt: ${error.message || 'Unknown API Error'}`
+      error: `Failed to enhance prompt: ${cleanMessage}`
     });
   }
 };

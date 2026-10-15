@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 220 33% 98%;
+    --background: 220 20% 98%;
     --foreground: 224 71% 4%;
     
     --card: 0 0% 100%;
@@ -15,47 +15,45 @@
     --primary: 262 83% 58%;
     --primary-foreground: 210 20% 98%;
     
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220.9 39% 11%;
     
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 45%;
     
     --accent: 262 83% 96%;
     --accent-foreground: 262 83% 58%;
     
-    --border: 220 13% 91%;
-    --radius: 1rem;
-    
-    --glass-bg: rgba(255, 255, 255, 0.45);
-    --glass-border: rgba(255, 255, 255, 0.6);
-    --glass-glow: rgba(139, 92, 246, 0.1);
+    --border: 220 13% 90%;
+    --radius: 0.75rem;
+
+    --panel-bg: rgba(255, 255, 255, 0.95);
+    --panel-border: rgba(0, 0, 0, 0.08);
   }
 
   .dark {
-    --background: 224 71% 4%;
+    --background: 228 35% 6%;      /* #0a0d16 - Deep refined studio black */
     --foreground: 210 20% 98%;
     
-    --card: 224 71% 7%;
+    --card: 228 30% 9%;            /* #0e1320 */
     --card-foreground: 210 20% 98%;
     
-    --primary: 263 90% 68%;
+    --primary: 263 85% 65%;        /* #9353d3 - Crisp violet */
     --primary-foreground: 224 71% 4%;
     
-    --secondary: 215 27.9% 12%;
+    --secondary: 228 25% 12%;
     --secondary-foreground: 210 20% 98%;
     
-    --muted: 215 27.9% 12%;
-    --muted-foreground: 217.9 10.6% 64.9%;
+    --muted: 228 20% 14%;
+    --muted-foreground: 217 12% 60%;
     
-    --accent: 263 50% 15%;
-    --accent-foreground: 263 90% 68%;
+    --accent: 263 50% 16%;
+    --accent-foreground: 263 90% 75%;
     
-    --border: 215 27.9% 14%;
-    
-    --glass-bg: rgba(15, 23, 42, 0.45);
-    --glass-border: rgba(255, 255, 255, 0.05);
-    --glass-glow: rgba(139, 92, 246, 0.15);
+    --border: 228 20% 16%;         /* Crisp subtle divider */
+
+    --panel-bg: rgba(14, 19, 32, 0.85);
+    --panel-border: rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -65,69 +63,48 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.011em;
     overflow-x: hidden;
   }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', sans-serif;
+  
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 }
 
-/* Glassmorphism custom classes */
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+/* Subtle, authentic human-crafted surface styling */
+.studio-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
 }
 
-.glass-panel-glow {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12), 
-              inset 0 0 15px var(--glass-glow), 
-              0 0 20px var(--glass-glow);
+.dark .studio-card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
-.glass-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.studio-input {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--panel-border);
+  transition: all 0.15s ease;
 }
 
-.glass-card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px 0 rgba(139, 92, 246, 0.15), 
-              inset 0 0 20px var(--glass-glow);
-  border-color: rgba(139, 92, 246, 0.3);
+.dark .studio-input {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.glass-input {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
-}
-
-.glass-input:focus {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: hsl(var(--primary));
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+.studio-input:focus {
   outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary));
 }
 
-.dark .glass-input {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.dark .glass-input:focus {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-/* Custom Scrollbar for sleek appearance */
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -135,50 +112,21 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(140, 140, 160, 0.2);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.4);
+  background: rgba(140, 140, 160, 0.4);
 }
 
-/* Shimmer animation for loading states */
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.shimmer-bg {
-  position: relative;
-  overflow: hidden;
-}
-
-.shimmer-bg::after {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.08) 20%,
-    rgba(255, 255, 255, 0.15) 60%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  animation: shimmer 1.8s infinite;
-  content: '';
-}
-
-.dark .shimmer-bg::after {
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.03) 20%,
-    rgba(255, 255, 255, 0.08) 60%,
-    rgba(255, 255, 255, 0) 100%
-  );
+/* Keyboard badge */
+.kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  background: rgba(120, 120, 140, 0.12);
+  border: 1px solid rgba(120, 120, 140, 0.2);
+  color: inherit;
 }

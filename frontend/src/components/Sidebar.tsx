@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Sparkles, Trash2, Search, Calendar, Folder, ArrowLeft } from 'lucide-react';
+import { 
+  Trash2, 
+  Search, 
+  Clock, 
+  FolderArchive, 
+  X, 
+  ChevronRight,
+  Copy,
+  Check
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface HistoryItem {
@@ -29,8 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsOpen
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Filter history based on search term
   const filteredHistory = history.filter(
     (item) =>
       item.originalPrompt.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,79 +47,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
       item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatDate = (dateString: string) => {
+  const formatRelativeTime = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     } catch {
       return dateString;
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      Coding: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-      'UI/UX': 'bg-pink-500/10 text-pink-500 border-pink-500/20',
-      Marketing: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-      'Content Writing': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-      Business: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
-      'Startup Ideas': 'bg-violet-500/10 text-violet-500 border-violet-500/20',
-      'Image Generation': 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
-      'Resume Building': 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-    };
-    return colors[category] || 'bg-muted text-muted-foreground border-border';
+  const handleCopy = async (e: React.MouseEvent, item: HistoryItem) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(item.enhancedPrompt);
+      setCopiedId(item.id);
+      setTimeout(() => setCopiedId(null), 1800);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-full w-full bg-card/90 dark:bg-card/40 backdrop-blur-md">
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between p-5 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="w-5 h-5 fill-primary/10" />
-          </div>
-          <h2 className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">
-            Prompt History
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+            History
           </h2>
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-secondary text-muted-foreground">
+            {history.length}
+          </span>
         </div>
-        {/* Mobile close button */}
         <button
           onClick={() => setIsOpen(false)}
-          className="md:hidden p-1.5 rounded-lg hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
+          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          aria-label="Close sidebar"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Search Input */}
-      <div className="p-4 border-b border-border/60">
+      <div className="p-3 border-b border-border/60">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search prompts or categories..."
+            placeholder="Search saved prompts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm rounded-xl glass-input placeholder-muted-foreground"
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg studio-input text-foreground placeholder:text-muted-foreground/60"
           />
         </div>
       </div>
 
-      {/* History List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* History Items List */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
         {filteredHistory.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center px-4">
-            <Folder className="w-10 h-10 text-muted-foreground/30 mb-2.5" />
-            <p className="text-sm font-medium text-muted-foreground">
-              {searchTerm ? 'No matching prompts' : 'No saved prompts yet'}
+          <div className="flex flex-col items-center justify-center h-44 text-center px-4">
+            <FolderArchive className="w-7 h-7 text-muted-foreground/40 mb-2" />
+            <p className="text-xs font-medium text-muted-foreground">
+              {searchTerm ? 'No matches found' : 'No prompt history'}
             </p>
-            <p className="text-xs text-muted-foreground/70 mt-1 max-w-[180px]">
-              {searchTerm ? 'Try adjusting your search filters.' : 'Enhanced prompts will appear here.'}
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5 max-w-[180px]">
+              {searchTerm ? 'Try a different search query' : 'Enhanced prompts will automatically save here'}
             </p>
           </div>
         ) : (
@@ -118,65 +131,80 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {filteredHistory.map((item) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20, transition: { duration: 0.15 } }}
-                className="group relative flex flex-col p-3.5 rounded-xl border border-border/80 bg-card/40 hover:bg-card/90 dark:bg-card/20 dark:hover:bg-card/40 transition-all duration-300 cursor-pointer shadow-sm hover:shadow"
+                exit={{ opacity: 0, x: -10 }}
                 onClick={() => {
                   onSelect(item);
-                  // Close sidebar on mobile
-                  if (window.innerWidth < 768) {
+                  if (window.innerWidth < 1024) {
                     setIsOpen(false);
                   }
                 }}
+                className="group relative flex flex-col p-2.5 rounded-lg border border-transparent hover:border-border hover:bg-secondary/40 transition-all cursor-pointer select-none text-left"
               >
-                {/* Meta details */}
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getCategoryColor(item.category)}`}>
-                    {item.category}
-                  </span>
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <Calendar className="w-3 h-3" />
-                    <span>{formatDate(item.timestamp)}</span>
+                {/* Meta Header */}
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-foreground/80">{item.category}</span>
+                    <span className="text-border">·</span>
+                    <span>{item.level}</span>
                   </div>
+                  <span>{formatRelativeTime(item.timestamp)}</span>
                 </div>
 
-                {/* Prompt Excerpt */}
-                <p className="text-xs text-foreground font-medium line-clamp-2 pr-6">
+                {/* Content Excerpt */}
+                <p className="text-xs text-foreground/90 font-medium line-clamp-2 leading-relaxed">
                   {item.originalPrompt}
                 </p>
 
-                {/* Level indicator */}
-                <div className="mt-2.5 flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>Level: <strong className="text-primary/90">{item.level}</strong></span>
+                {/* Action buttons on hover */}
+                <div className="mt-2 flex items-center justify-between text-[11px] pt-1.5 border-t border-border/40 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                  <span className="text-primary flex items-center gap-0.5 text-[10px]">
+                    <span>Load</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopy(e, item)}
+                      title="Copy enhanced prompt"
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                    >
+                      {copiedId === item.id ? (
+                        <Check className="w-3 h-3 text-emerald-500" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(item.id);
+                      }}
+                      title="Delete prompt"
+                      className="p-1 rounded text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-
-                {/* Delete button (shows on hover) */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(item.id);
-                  }}
-                  className="absolute right-3 bottom-3 p-1.5 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label="Delete History Item"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
               </motion.div>
             ))}
           </AnimatePresence>
         )}
       </div>
 
-      {/* Sidebar Footer */}
+      {/* Footer */}
       {history.length > 0 && (
-        <div className="p-4 border-t border-border">
+        <div className="p-3 border-t border-border/80">
           <button
+            type="button"
             onClick={onClearAll}
-            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-rose-500/20 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 font-semibold text-xs transition-colors duration-200"
+            className="w-full py-1.5 text-[11px] text-muted-foreground hover:text-rose-500 transition-colors flex items-center justify-center gap-1.5 font-medium"
           >
-            <Trash2 className="w-4 h-4" />
-            Clear All History
+            <Trash2 className="w-3 h-3" />
+            <span>Clear history</span>
           </button>
         </div>
       )}
@@ -185,34 +213,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Sidebar (hidden on mobile) */}
-      <aside className="hidden md:flex flex-col w-80 h-full border-r border-border glass-panel shrink-0">
-        {sidebarContent}
-      </aside>
-
-      {/* Mobile Sidebar overlay */}
+      {/* Desktop Persistent Drawer when open */}
       <AnimatePresence>
         {isOpen && (
-          <>
-            {/* Backdrop */}
+          <motion.aside
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 280, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeInOut' }}
+            className="hidden lg:flex flex-col h-full border-r border-border shrink-0 overflow-hidden z-20"
+          >
+            <div className="w-[280px] h-full">
+              {sidebarContent}
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile / Tablet Overlay Drawer */}
+      <AnimatePresence>
+        {isOpen && (
+          <div className="lg:hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs"
             />
-            {/* Drawer */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] h-full bg-background border-r border-border shadow-2xl md:hidden"
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] h-full shadow-2xl"
             >
               {sidebarContent}
             </motion.aside>
-          </>
+          </div>
         )}
       </AnimatePresence>
     </>
